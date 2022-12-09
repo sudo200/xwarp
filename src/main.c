@@ -25,6 +25,8 @@ __attribute__((noreturn)) void help() {
     "\n"
     "\t-a\tInterprete coordinates as absolute from root window\n"
     "\n"
+    "\t-w\tThe window id of the window to use as a coordinate reference\n"
+    "\n"
     "\t-v,--version\tShow version\n"
     "\n"
     "\t-h,--help\tShow this"
@@ -53,7 +55,13 @@ int main(int argc, char **argv)
 {
   const char *display = NULL;
   Window dest = None;
-  bool absolute = false;
+  struct {
+    bool absolute: 1;
+    unsigned long winid;
+  } flags = {
+    .absolute = false,
+    .winid = 0UL,
+  };
 
 
   unsigned int x = 0U,
@@ -71,7 +79,13 @@ int main(int argc, char **argv)
     else if(equals(argv[i], "-y"))
       y = strtoui(argv[++i], 0);
     else if(equals(argv[i], "-a"))
-      absolute = true;
+      flags.absolute = true;
+    else if(equals(argv[i], "-w")) {
+      char *c, *arg = argv[++i];
+      flags.winid = strtoul(arg, &c, 0);
+      if(flags.winid == 0UL && c == arg)
+        die("Not a number!");
+    }
   }
 
   if(x == 0U && y == 0U)
@@ -81,8 +95,14 @@ int main(int argc, char **argv)
   if(d == NULL)
     die("Cannot open display!");
 
-  if(absolute)
+  if(flags.absolute && flags.winid != 0UL)
+    die("-a and -w are mutually exclusive!");
+
+  if(flags.absolute)
     dest = XRootWindow(d, XDefaultScreen(d));
+
+  if(flags.winid != 0UL)
+    dest = flags.winid;
 
   if(XWarpPointer(d, None, dest, 0, 0, 0, 0, x, y) == BadWindow)
     die("Error from X11: BadWindow");
