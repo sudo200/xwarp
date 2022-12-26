@@ -6,7 +6,9 @@
 
 #include <X11/Xlib.h>
 
-#define VERSION "v0.0.1"
+#ifndef VERSION
+#define VERSION "v1.0.0"
+#endif
 
 
 #define die(msg)  do { fprintf(stderr, "%s\n", msg); exit(EXIT_FAILURE); } while(0)
